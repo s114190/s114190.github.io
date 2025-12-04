@@ -1,0 +1,65 @@
+import React, { useState, useEffect, useRef } from "react";
+
+
+export default function App() {
+const [running, setRunning] = useState(false);
+const [rounds, setRounds] = useState(5);
+const [currentRound, setCurrentRound] = useState(0);
+const [circleVisible, setCircleVisible] = useState(false);
+const [circlePos, setCirclePos] = useState({ x: 50, y: 50 });
+const [startTime, setStartTime] = useState(null);
+const [lastTime, setLastTime] = useState(null);
+const [times, setTimes] = useState([]);
+const [minDelay, setMinDelay] = useState(500);
+const [maxDelay, setMaxDelay] = useState(2000);
+const [circleSize, setCircleSize] = useState(70);
+const containerRef = useRef(null);
+const timerRef = useRef(null);
+
+
+useEffect(() => {
+return () => clearTimeout(timerRef.current);
+}, []);
+
+
+const randomBetween = (a, b) => Math.random() * (b - a) + a;
+
+
+function startGame() {
+setTimes([]);
+setCurrentRound(0);
+setRunning(true);
+setLastTime(null);
+setTimeout(() => nextRound(), 300);
+}
+
+
+function endGame() {
+setRunning(false);
+setCircleVisible(false);
+clearTimeout(timerRef.current);
+}
+
+
+function nextRound() {
+if (!running) return;
+if (currentRound >= rounds) {
+endGame();
+return;
+}
+setCircleVisible(false);
+const delay = randomBetween(minDelay, maxDelay);
+timerRef.current = setTimeout(() => showCircle(), delay);
+setCurrentRound((r) => r + 1);
+}
+
+
+function showCircle() {
+const box = containerRef.current?.getBoundingClientRect();
+const size = circleSize;
+if (!box) {
+setCirclePos({ x: 50, y: 50 });
+} else {
+const padding = 10;
+const maxX = box.width - size - padding;
+const maxY = box.height - size - padding;
