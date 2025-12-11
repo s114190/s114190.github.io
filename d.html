@@ -1,138 +1,226 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>記憶力翻牌遊戲</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪵 木魚功德箱</title>
+    <style>
+        body { 
+            font-family: 'Noto Serif TC', serif; 
+            text-align: center; 
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #a8edea 100%);
+            margin: 0; 
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #gameArea { 
+            max-width: 400px; 
+            background: rgba(255,255,255,0.9); 
+            border-radius: 30px; 
+            padding: 40px 30px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+        h1 { 
+            font-size: 2.5em; 
+            background: linear-gradient(45deg, #d68910, #f39c12); 
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        #merit { 
+            font-size: 3em; 
+            font-weight: bold; 
+            color: #e74c3c; 
+            margin: 30px 0;
+            min-height: 80px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        #woodfish { 
+            width: 200px; 
+            height: 200px; 
+            background: radial-gradient(circle at 30% 30%, #8B4513 0%, #A0522D 50%, #654321 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            cursor: pointer; 
+            position: relative; 
+            margin: 0 auto 30px;
+            transition: all 0.2s;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.3),
+                inset 0 10px 20px rgba(255,255,255,0.2),
+                inset 0 -10px 20px rgba(0,0,0,0.3);
+        }
+        #woodfish::before {
+            content: '🪵';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            z-index: 2;
+        }
+        #woodfish::after {
+            content: '';
+            position: absolute;
+            top: 40%;
+            left: 45%;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #D2691E, #CD853F);
+            border-radius: 50%;
+            box-shadow: 10px 0 0 #D2691E;
+            z-index: 1;
+        }
+        #woodfish:hover { transform: scale(1.05); }
+        #woodfish:active { 
+            transform: scale(0.95) translateY(10px);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.4),
+                inset 0 10px 20px rgba(255,255,255,0.3),
+                inset 0 -5px 10px rgba(0,0,0,0.4);
+        }
+        .hit { animation: hitWoodfish 0.3s ease; }
+        @keyframes hitWoodfish {
+            0% { transform: scale(1) translateY(0); }
+            30% { transform: scale(1.1) translateY(-5px); }
+            70% { transform: scale(0.95) translateY(8px); }
+            100% { transform: scale(1) translateY(0); }
+        }
+        #total { 
+            font-size: 1.2em; 
+            color: #7f8c8d; 
+            margin-bottom: 20px;
+        }
+        button { 
+            padding: 12px 30px; 
+            font-size: 16px; 
+            background: linear-gradient(45deg, #e74c3c, #c0392b); 
+            color: white; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .floating { 
+            position: absolute; 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #f1c40f; 
+            pointer-events: none;
+            animation: floatUp 1.5s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+    </style>
 </head>
 <body>
-  <h1>記憶力翻牌遊戲</h1>
-  <div id="game"></div>
-  <button id="restart">重新開始</button>
+    <div id="gameArea">
+        <h1>🪵 敲木魚 積功德</h1>
+        <div id="total">今日總功德: <span id="todayMerit">0</span></div>
+        <div id="merit">功德 +0</div>
+        <div id="woodfish"></div>
+        <button onclick="resetMerit()">清除今日功德</button>
+    </div>
 
-  <script src="script.js"></script>
+    <script>
+        let merit = 0;
+        let todayMerit = localStorage.getItem('todayMerit') ? parseInt(localStorage.getItem('todayMerit')) : 0;
+        const woodfish = document.getElementById('woodfish');
+        const meritEl = document.getElementById('merit');
+        const todayMeritEl = document.getElementById('todayMerit');
+
+        // 載入今日功德
+        todayMeritEl.textContent = todayMerit;
+
+        // 木魚敲擊聲音 (使用Web Audio API合成真實木魚聲)
+        function playWoodfishSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 木魚敲擊聲波
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // 敲木魚
+        woodfish.addEventListener('click', function() {
+            merit++;
+            todayMerit++;
+            
+            // 更新顯示
+            meritEl.textContent = `功德 +${merit}`;
+            todayMeritEl.textContent = todayMerit;
+            
+            // 儲存今日功德
+            localStorage.setItem('todayMerit', todayMerit);
+            
+            // 動畫效果
+            this.classList.add('hit');
+            setTimeout(() => this.classList.remove('hit'), 300);
+            
+            // 浮動功德數字
+            createFloatingText(`+1`, this);
+            
+            // 播放木魚聲音
+            playWoodfishSound();
+        });
+
+        // 浮動文字效果
+        function createFloatingText(text, parent) {
+            const floatEl = document.createElement('div');
+            floatEl.textContent = text;
+            floatEl.className = 'floating';
+            floatEl.style.left = '50%';
+            floatEl.style.top = '30%';
+            parent.appendChild(floatEl);
+            
+            setTimeout(() => {
+                if (floatEl.parentNode) {
+                    floatEl.parentNode.removeChild(floatEl);
+                }
+            }, 1500);
+        }
+
+        // 重置功德
+        function resetMerit() {
+            if (confirm('確定要清除今日功德嗎？')) {
+                merit = 0;
+                todayMerit = 0;
+                meritEl.textContent = '功德 +0';
+                todayMeritEl.textContent = '0';
+                localStorage.removeItem('todayMerit');
+            }
+        }
+
+        // 支援觸控和鍵盤
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                woodfish.click();
+            }
+        });
+    </script>
 </body>
 </html>
-body {
-  background: #1e1e2f;
-  color: #fff;
-  font-family: Arial;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding-top: 30px;
-}
-
-#game {
-  display: grid;
-  grid-template-columns: repeat(4, 100px);
-  gap: 12px;
-}
-
-.card {
-  width: 100px;
-  height: 100px;
-  background: #3c3f58;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 38px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: transform 0.3s;
-}
-
-.card.flipped {
-  background: #ffffff;
-  color: #000;
-  transform: rotateY(180deg);
-  cursor: default;
-}
-
-#restart {
-  padding: 10px 22px;
-  font-size: 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #ff7a59;
-  color: #fff;
-}const gameBoard = document.getElementById("game");
-const restartBtn = document.getElementById("restart");
-
-let emojis = ["🍎", "🍎", "🍌", "🍌", "🍔", "🍔", "🍕", "🍕",
-              "🐱", "🐱", "⭐", "⭐", "🌙", "🌙", "🧸", "🧸"];
-
-let firstCard = null;
-let lock = false;
-
-function shuffle(array) {
-  return array.sort(() => Math.random() - 0.5);
-}
-
-function startGame() {
-  gameBoard.innerHTML = "";
-  firstCard = null;
-  lock = false;
-
-  let shuffled = shuffle([...emojis]);
-
-  shuffled.forEach((emoji) => {
-    const card = document.createElement("div");
-    card.classList.add("card");
-    card.dataset.value = emoji;
-    card.textContent = "❓";
-
-    card.addEventListener("click", () => flipCard(card));
-
-    gameBoard.appendChild(card);
-  });
-}
-
-function flipCard(card) {
-  if (lock || card.classList.contains("flipped")) return;
-
-  card.classList.add("flipped");
-  card.textContent = card.dataset.value;
-
-  if (!firstCard) {
-    firstCard = card;
-  } else {
-    lock = true;
-    setTimeout(() => {
-      if (firstCard.dataset.value === card.dataset.value) {
-        firstCard = null;
-        lock = false;
-      } else {
-        firstCard.classList.remove("flipped");
-        firstCard.textContent = "❓";
-
-        card.classList.remove("flipped");
-        card.textContent = "❓";
-
-        firstCard = null;
-        lock = false;
-      }
-
-      checkWin();
-    }, 800);
-  }
-}
-
-function checkWin() {
-  const cards = document.querySelectorAll(".card");
-  const allFlipped = [...cards].every((c) => c.classList.contains("flipped"));
-
-  if (allFlipped) {
-    setTimeout(() => {
-      alert("你贏了！ 🎉");
-    }, 300);
-  }
-}
-
-restartBtn.addEventListener("click", startGame);
-
-startGame();
 
