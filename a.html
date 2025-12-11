@@ -3,78 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡單晚餐選擇輪盤</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/winwheel/2.2.0/Winwheel.min.js"></script>
+    <title>打地鼠遊戲</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; padding: 20px; }
-        #wheel { width: 400px; height: 400px; margin: 20px auto; }
-        #options { margin: 20px 0; }
-        input { padding: 10px; margin: 5px; width: 200px; }
-        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background: #45a049; }
-        #result { font-size: 24px; color: #333; margin: 20px; font-weight: bold; }
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            margin: 0; 
+            padding: 20px;
+            min-height: 100vh;
+        }
+        #gameArea { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 20px; 
+            padding: 20px; 
+            backdrop-filter: blur(10px);
+        }
+        #gameBoard { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; 
+            margin: 20px auto; 
+            max-width: 300px;
+        }
+        .hole { 
+            width: 100px; 
+            height: 100px; 
+            background: #8B4513; 
+            border-radius: 50%; 
+            position: relative; 
+            cursor: pointer; 
+            transition: transform 0.1s;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .hole:hover { transform: scale(1.05); }
+        .mole { 
+            width: 80px; 
+            height: 80px; 
+            background: #D2691E; 
+            border-radius: 50%; 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .mole.hit { transform: scale(0.8) translateY(20px); background: #A0522D; }
+        .mole.miss { background: #FF4500; }
+        #stats { 
+            display: flex; 
+            justify-content: space-around; 
+            font-size: 24px; 
+            font-weight: bold; 
+            margin: 20px 0;
+        }
+        button { 
+            padding: 15px 30px; 
+            font-size: 18px; 
+            background: #FF6B6B; 
+            color: white; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            transition: all 0.3s;
+            margin: 10px;
+        }
+        button:hover { background: #FF5252; transform: scale(1.05); }
+        button:disabled { background: #666; cursor: not-allowed; transform: none; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
-    <h1>晚餐選擇輪盤</h1>
-    <canvas id="wheel" width="400" height="400"></canvas>
-    <div id="options">
-        <input type="text" id="newOption" placeholder="輸入晚餐選項（如：義大利麵）">
-        <button onclick="addOption()">新增</button>
-        <button onclick="removeOption()">刪除最後一個</button>
+    <div id="gameArea">
+        <h1>🕷️ 打地鼠 🐀</h1>
+        <div id="stats">
+            <div>分數: <span id="score">0</span></div>
+            <div>時間: <span id="time">30</span>s</div>
+        </div>
+        <div id="gameBoard"></div>
+        <button id="startBtn">開始遊戲</button>
+        <button id="resetBtn" disabled>重置</button>
+        <p id="gameStatus">點擊「開始遊戲」開始挑戰！</p>
     </div>
-    <button onclick="spinWheel()">轉動輪盤！</button>
-    <div id="result"></div>
 
     <script>
-        let theWheel = new Winwheel({
-            canvasId: 'wheel',
-            numSegments: 8,
-            outerRadius: 180,
-            textFontSize: 16,
-            segments: [
-                { fillStyle: '#ff6b6b', text: '炒飯' },
-                { fillStyle: '#4ecdc4', text: '火鍋' },
-                { fillStyle: '#45b7d1', text: '義大利麵' },
-                { fillStyle: '#f9ca24', text: '漢堡' },
-                { fillStyle: '#6c5ce7', text: '壽司' },
-                { fillStyle: '#fd79a8', text: '炸雞' },
-                { fillStyle: '#00b894', text: '牛排' },
-                { fillStyle: '#e17055', text: '便當' }
-            ],
-            animation: { duration: 3000, spins: 8, callbackAfter: showResult }
-        });
+        const gameBoard = document.getElementById('gameBoard');
+        const scoreEl = document.getElementById('score');
+        const timeEl = document.getElementById('time');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusEl = document.getElementById('gameStatus');
 
-        function addOption() {
-            let input = document.getElementById('newOption');
-            if (input.value.trim()) {
-                theWheel.addSegment({ fillStyle: getRandomColor(), text: input.value.trim() });
-                theWheel.draw();
-                input.value = '';
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = false;
+        let moles = [];
+        let currentMole = null;
+        let timer;
+
+        // 建立9個地洞
+        for(let i = 0; i < 9; i++) {
+            const hole = document.createElement('div');
+            hole.className = 'hole';
+            hole.dataset.index = i;
+            gameBoard.appendChild(hole);
+        }
+
+        const holes = document.querySelectorAll('.hole');
+
+        startBtn.addEventListener('click', startGame);
+        resetBtn.addEventListener('click', resetGame);
+
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            timeLeft = 30;
+            updateDisplay();
+            startBtn.disabled = true;
+            resetBtn.disabled = false;
+            statusEl.textContent = '小心！地鼠要出現了！';
+            
+            // 遊戲計時器
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if(timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            spawnMole();
+        }
+
+        function spawnMole() {
+            if(!gameActive) return;
+            
+            // 隨機選擇地洞
+            const holeIndex = Math.floor(Math.random() * 9);
+            const hole = holes[holeIndex];
+            
+            // 移除之前的地鼠
+            if(currentMole) {
+                currentMole.remove();
             }
+            
+            // 建立新地鼠
+            const mole = document.createElement('div');
+            mole.className = 'mole';
+            mole.dataset.index = holeIndex;
+            hole.appendChild(mole);
+            
+            currentMole = mole;
+            
+            // 隨機存活時間 (500-2000ms)
+            const surviveTime = Math.random() * 1500 + 500;
+            setTimeout(() => {
+                if(mole.parentNode) {
+                    mole.classList.add('miss');
+                    setTimeout(() => mole.remove(), 300);
+                }
+                if(gameActive) spawnMole();
+            }, surviveTime);
+            
+            // 點擊事件
+            mole.addEventListener('click', hitMole);
         }
 
-        function removeOption() {
-            theWheel.deleteSegment(theWheel.numSegments - 1);
-            theWheel.draw();
+        function hitMole(e) {
+            e.target.classList.add('hit');
+            score += 10;
+            updateDisplay();
+            setTimeout(() => e.target.remove(), 200);
+            spawnMole(); // 立即出現下一隻
         }
 
-        function spinWheel() {
-            if (theWheel.numSegments > 1) {
-                theWheel.startAnimation();
-            } else {
-                alert('至少需要2個選項！');
-            }
+        function updateDisplay() {
+            scoreEl.textContent = score;
+            timeEl.textContent = timeLeft;
         }
 
-        function showResult() {
-            let result = theWheel.segments[theWheel.stopAtSegment].text;
-            document.getElementById('result').innerHTML = '今晚吃：' + result + '！';
+        function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+            startBtn.disabled = false;
+            statusEl.textContent = `遊戲結束！最終分數：${score} 分 🎉`;
+            if(currentMole) currentMole.remove();
         }
 
-        function getRandomColor() {
-            let colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8', '#00b894', '#e17055'];
-            return colors[Math.floor(Math.random() * colors.length)];
+        function resetGame() {
+            endGame();
+            score = 0;
+            timeLeft = 30;
+            updateDisplay();
+            statusEl.textContent = '準備好了嗎？';
         }
     </script>
 </body>
