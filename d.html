@@ -14,3 +14,125 @@
   <script src="script.js"></script>
 </body>
 </html>
+body {
+  background: #1e1e2f;
+  color: #fff;
+  font-family: Arial;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-top: 30px;
+}
+
+#game {
+  display: grid;
+  grid-template-columns: repeat(4, 100px);
+  gap: 12px;
+}
+
+.card {
+  width: 100px;
+  height: 100px;
+  background: #3c3f58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform 0.3s;
+}
+
+.card.flipped {
+  background: #ffffff;
+  color: #000;
+  transform: rotateY(180deg);
+  cursor: default;
+}
+
+#restart {
+  padding: 10px 22px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #ff7a59;
+  color: #fff;
+}
+const gameBoard = document.getElementById("game");
+const restartBtn = document.getElementById("restart");
+
+let emojis = ["🍎", "🍎", "🍌", "🍌", "🍔", "🍔", "🍕", "🍕",
+              "🐱", "🐱", "⭐", "⭐", "🌙", "🌙", "🧸", "🧸"];
+
+let firstCard = null;
+let lock = false;
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+  gameBoard.innerHTML = "";
+  firstCard = null;
+  lock = false;
+
+  let shuffled = shuffle([...emojis]);
+
+  shuffled.forEach((emoji) => {
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.dataset.value = emoji;
+    card.textContent = "❓";
+
+    card.addEventListener("click", () => flipCard(card));
+
+    gameBoard.appendChild(card);
+  });
+}
+
+function flipCard(card) {
+  if (lock || card.classList.contains("flipped")) return;
+
+  card.classList.add("flipped");
+  card.textContent = card.dataset.value;
+
+  if (!firstCard) {
+    firstCard = card;
+  } else {
+    lock = true;
+    setTimeout(() => {
+      if (firstCard.dataset.value === card.dataset.value) {
+        firstCard = null;
+        lock = false;
+      } else {
+        firstCard.classList.remove("flipped");
+        firstCard.textContent = "❓";
+
+        card.classList.remove("flipped");
+        card.textContent = "❓";
+
+        firstCard = null;
+        lock = false;
+      }
+
+      checkWin();
+    }, 800);
+  }
+}
+
+function checkWin() {
+  const cards = document.querySelectorAll(".card");
+  const allFlipped = [...cards].every((c) => c.classList.contains("flipped"));
+
+  if (allFlipped) {
+    setTimeout(() => {
+      alert("你贏了！ 🎉");
+    }, 300);
+  }
+}
+
+restartBtn.addEventListener("click", startGame);
+
+startGame();
