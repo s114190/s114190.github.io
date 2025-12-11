@@ -177,4 +177,97 @@
             game.appendChild(cactus);
             cactuses.push(cactus);
             
-            //
+            // 自動移除（透過動畫結束）
+            setTimeout(() => {
+                if (cactus.parentNode) {
+                    cactus.remove();
+                    const index = cactuses.indexOf(cactus);
+                    if (index > -1) cactuses.splice(index, 1);
+                }
+            }, 3500);
+        }
+
+        // 碰撞偵測
+        function checkCollision() {
+            const dinoRect = dino.getBoundingClientRect();
+            
+            for (let cactus of cactuses) {
+                const cactusRect = cactus.getBoundingClientRect();
+                if (
+                    dinoRect.left < cactusRect.right &&
+                    dinoRect.right > cactusRect.left &&
+                    dinoRect.top < cactusRect.bottom &&
+                    dinoRect.bottom > cactusRect.top
+                ) {
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        // 遊戲結束
+        function gameOver() {
+            gameRunning = false;
+            gameOverEl.style.display = 'block';
+            finalScoreEl.textContent = score;
+            dino.classList.add('shake');
+        }
+
+        // 更新分數
+        function updateScore() {
+            if (!gameRunning) return;
+            score++;
+            scoreEl.textContent = `分數: ${score}`;
+            
+            // 速度隨分數增加
+            if (score % 100 === 0) {
+                gameSpeed += 0.2;
+                // 更新仙人掌動畫速度
+                document.querySelectorAll('.cactus').forEach(c => {
+                    c.style.animationDuration = `${3000 / gameSpeed}s`;
+                });
+            }
+        }
+
+        // 重新開始
+        function restart() {
+            gameRunning = true;
+            score = 0;
+            gameSpeed = 3;
+            gameOverEl.style.display = 'none';
+            dino.classList.remove('shake');
+            
+            // 清除所有仙人掌
+            cactuses.forEach(c => c.remove());
+            cactuses = [];
+            
+            updateScore();
+        }
+
+        // 事件監聽
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        game.addEventListener('click', jump);
+        restartBtn.addEventListener('click', restart);
+
+        // 遊戲主循環
+        function gameLoop() {
+            if (gameRunning) {
+                checkCollision();
+                updateScore();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 開始遊戲循環
+        setInterval(spawnCactus, 2000); // 每2秒生成仙人掌
+        gameLoop();
+    </script>
+</body>
+</html>
+
