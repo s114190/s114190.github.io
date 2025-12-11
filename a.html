@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡單晚餐選擇輪盤</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/winwheel/2.2.0/Winwheel.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; padding: 20px; }
+        #wheel { width: 400px; height: 400px; margin: 20px auto; }
+        #options { margin: 20px 0; }
+        input { padding: 10px; margin: 5px; width: 200px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #result { font-size: 24px; color: #333; margin: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>晚餐選擇輪盤</h1>
+    <canvas id="wheel" width="400" height="400"></canvas>
+    <div id="options">
+        <input type="text" id="newOption" placeholder="輸入晚餐選項（如：義大利麵）">
+        <button onclick="addOption()">新增</button>
+        <button onclick="removeOption()">刪除最後一個</button>
+    </div>
+    <button onclick="spinWheel()">轉動輪盤！</button>
+    <div id="result"></div>
+
+    <script>
+        let theWheel = new Winwheel({
+            canvasId: 'wheel',
+            numSegments: 8,
+            outerRadius: 180,
+            textFontSize: 16,
+            segments: [
+                { fillStyle: '#ff6b6b', text: '炒飯' },
+                { fillStyle: '#4ecdc4', text: '火鍋' },
+                { fillStyle: '#45b7d1', text: '義大利麵' },
+                { fillStyle: '#f9ca24', text: '漢堡' },
+                { fillStyle: '#6c5ce7', text: '壽司' },
+                { fillStyle: '#fd79a8', text: '炸雞' },
+                { fillStyle: '#00b894', text: '牛排' },
+                { fillStyle: '#e17055', text: '便當' }
+            ],
+            animation: { duration: 3000, spins: 8, callbackAfter: showResult }
+        });
+
+        function addOption() {
+            let input = document.getElementById('newOption');
+            if (input.value.trim()) {
+                theWheel.addSegment({ fillStyle: getRandomColor(), text: input.value.trim() });
+                theWheel.draw();
+                input.value = '';
+            }
+        }
+
+        function removeOption() {
+            theWheel.deleteSegment(theWheel.numSegments - 1);
+            theWheel.draw();
+        }
+
+        function spinWheel() {
+            if (theWheel.numSegments > 1) {
+                theWheel.startAnimation();
+            } else {
+                alert('至少需要2個選項！');
+            }
+        }
+
+        function showResult() {
+            let result = theWheel.segments[theWheel.stopAtSegment].text;
+            document.getElementById('result').innerHTML = '今晚吃：' + result + '！';
+        }
+
+        function getRandomColor() {
+            let colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8', '#00b894', '#e17055'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+    </script>
+</body>
+</html>
