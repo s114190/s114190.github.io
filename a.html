@@ -159,8 +159,8 @@
             
             currentMole = mole;
             
-            // 隨機存活時間 (500-2000ms)
-            const surviveTime = Math.random() * 1500 + 500;
+            // 隨機存活時間 (1000-2500ms)
+            const surviveTime = Math.random() * 1500 + 1000;
             setTimeout(() => {
                 if(mole.parentNode) {
                     mole.classList.add('miss');
